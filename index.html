@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>零基礎前端教學互動儀表板</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .smooth-transition {
+            transition: all 0.3s ease;
+        }
+        .hide-scroll::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scroll {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-stone-50 text-stone-800 font-sans antialiased selection:bg-amber-200 selection:text-stone-900">
+
+    <!-- Chosen Palette: Warm Neutrals (Stone-50 background, Amber-700 accents, Stone-800 text) -->
+    <!-- Application Structure Plan: Dashboard-style layout chosen to transform a linear markdown tutorial into an interactive learning hub. Users can track their progress through a dynamic doughnut chart, explore phases via a tabbed interface, easily copy prompts, and quickly access debugging info. This non-linear approach allows users to jump directly to their current step or blocker, enhancing usability over a static document. -->
+    <!-- Visualization & Content Choices: 1. Overview -> Goal: Inform -> Doughnut Chart (Chart.js) showing completion status -> Interactive progress tracking -> Visual motivation. 2. Steps -> Goal: Organize -> Tabbed Interface (HTML/JS) -> Easy navigation between phases. 3. Prompts -> Goal: Action -> Copy Buttons (JS) -> Streamlines the workflow. NO SVG/Mermaid used. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <nav class="bg-stone-100 border-b border-stone-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl">🚀</span>
+                    <h1 class="text-xl font-bold text-stone-800 tracking-wide">學生作品集 SPA 實作指南</h1>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <aside class="lg:col-span-4 flex flex-col gap-6">
+            <section class="bg-white rounded-2xl p-6 shadow-sm border border-stone-100">
+                <h2 class="text-xl font-bold mb-3 flex items-center gap-2"><span>📊</span> 學習進度追蹤</h2>
+                <p class="text-sm text-stone-600 mb-6 leading-relaxed">
+                    這個儀表板協助您追蹤「零基礎前端實作教學」的進度。您可以在此了解整個專案的概況，並透過勾選右側的已完成步驟，來視覺化您的學習歷程。
+                </p>
+                <div class="chart-container">
+                    <canvas id="progressChart"></canvas>
+                </div>
+                <div class="mt-4 text-center">
+                    <p class="text-3xl font-extrabold text-amber-700" id="progressText">0%</p>
+                    <p class="text-xs text-stone-500 uppercase tracking-widest mt-1">完成度</p>
+                </div>
+            </section>
+
+            <section class="bg-white rounded-2xl p-6 shadow-sm border border-stone-100">
+                <h2 class="text-xl font-bold mb-3 flex items-center gap-2"><span>📝</span> 課前準備清單</h2>
+                <p class="text-sm text-stone-600 mb-4 leading-relaxed">
+                    在開始前，請確保您已備妥以下項目。點擊項目即可標記完成。
+                </p>
+                <ul class="space-y-3" id="prepList">
+                    <li class="flex items-start gap-3 cursor-pointer group" onclick="togglePrep(this)">
+                        <div class="w-5 h-5 rounded border-2 border-stone-300 flex items-center justify-center mt-0.5 group-hover:border-amber-600 smooth-transition prep-check"></div>
+                        <span class="text-stone-700 select-none">一個 Google 帳號（用來使用 Gemini）</span>
+                    </li>
+                    <li class="flex items-start gap-3 cursor-pointer group" onclick="togglePrep(this)">
+                        <div class="w-5 h-5 rounded border-2 border-stone-300 flex items-center justify-center mt-0.5 group-hover:border-amber-600 smooth-transition prep-check"></div>
+                        <span class="text-stone-700 select-none">一個 GitHub 帳號（免費註冊）</span>
+                    </li>
+                    <li class="flex items-start gap-3 cursor-pointer group" onclick="togglePrep(this)">
+                        <div class="w-5 h-5 rounded border-2 border-stone-300 flex items-center justify-center mt-0.5 group-hover:border-amber-600 smooth-transition prep-check"></div>
+                        <span class="text-stone-700 select-none">一顆不怕犯錯、勇於嘗試的心！</span>
+                    </li>
+                </ul>
+            </section>
+        </aside>
+
+        <div class="lg:col-span-8 flex flex-col gap-6">
+            
+            <section class="bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden flex flex-col">
+                <div class="p-6 border-b border-stone-100 bg-stone-50/50">
+                    <h2 class="text-2xl font-bold mb-2 flex items-center gap-2"><span>🧑‍🏫</span> 互動式教學步驟</h2>
+                    <p class="text-sm text-stone-600 leading-relaxed">
+                        在此區塊，您可以依照階段逐步探索教學內容。點擊不同的階段標籤即可切換內容，每個步驟都附有操作說明與可一鍵複製的提示詞範本，幫助您快速與 Gemini 互動。
+                    </p>
+                </div>
+                
+                <div class="flex overflow-x-auto hide-scroll border-b border-stone-200 bg-white" id="tabContainer">
+                </div>
+
+                <div class="p-6 bg-white flex-grow" id="stepContentContainer">
+                </div>
+            </section>
+
+            <section class="bg-stone-800 rounded-2xl p-6 shadow-sm text-stone-100">
+                <h2 class="text-xl font-bold mb-3 flex items-center gap-2 text-amber-400"><span>🛠️</span> 常見錯誤與除錯指南</h2>
+                <p class="text-sm text-stone-300 mb-6 leading-relaxed">
+                    開發過程中遇到問題是很正常的。本區塊整理了部署與版面常見的錯誤狀況及其解決方案，並提供專用的除錯提示詞，協助您快速排除障礙。
+                </p>
+                
+                <div class="space-y-4" id="debugContainer">
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <div id="toast" class="fixed bottom-5 right-5 bg-stone-800 text-white px-6 py-3 rounded-lg shadow-xl transform translate-y-20 opacity-0 smooth-transition z-50 flex items-center gap-2">
+        <span>📋</span> <span id="toastMsg">已複製到剪貼簿！</span>
+    </div>
+
+    <script>
+        const tutorialData = {
+            phases: [
+                {
+                    id: "phase1",
+                    icon: "🤖",
+                    title: "階段一：Canvas 生成",
+                    desc: "把 Gemini 當作你的專屬工程師，透過給予提示詞來讓它寫出網頁程式碼。",
+                    steps: [
+                        {
+                            id: "s1",
+                            title: "步驟 1：首次生成基礎架構",
+                            goal: "建立一個包含 HTML、CSS 和 JavaScript 的單頁式網頁（SPA）基礎骨架。",
+                            action: "開啟 Gemini 網頁版，將下方的提示詞複製並貼上對話框，送出。",
+                            result: "Gemini 會在右側開啟 Canvas 視窗，裡面顯示完整程式碼，可點擊「預覽」看結果。",
+                            prompt: "我是一個前端新手，請幫我寫一個單頁式（SPA）的學生個人作品集網頁。請將 HTML、CSS（可使用 Tailwind CSS 類別或原生 CSS）和 JavaScript 全部寫在同一個檔案裡。\n網頁需要包含以下區塊，並帶有平滑捲動（Smooth Scrolling）的導覽列：\n1. 首頁 (Home)：大標題、簡短的自我介紹。\n2. 關於我 (About)：詳細背景、就讀學校、科系。\n3. 專業技能 (Skills)：列出我會的技能（如 Python, 英文, 簡報技巧等），可以用簡單的進度條或標籤呈現。\n4. 作品展示 (Projects)：3 個假作品的卡片（包含作品名稱、簡介、以及用佔位圖代替的圖片）。\n5. 聯絡我 (Contact)：一個簡單的聯絡表單（不需實際後端功能，只需前端畫面）與社群連結。\n請加上詳細的中文註解，讓新手也能看懂。"
+                        },
+                        {
+                            id: "s2",
+                            title: "步驟 2：優化版面設計 (UI)",
+                            goal: "讓網頁看起來更現代、專業、有質感。",
+                            action: "不要開啟新對話，繼續在同一個 Gemini 對話框中輸入下方提示詞。",
+                            result: "Canvas 裡的程式碼會更新，配色、字體、按鈕樣式和卡片陰影會變得更漂亮。",
+                            prompt: "現在，請幫我優化這個網頁的視覺設計（UI）。\n1. 請使用現代、簡約的配色（例如：莫蘭迪色系或深色模式/淺色模式切換）。\n2. 將卡片加上圓角（border-radius）和柔和的陰影（box-shadow）。\n3. 為按鈕和導覽列連結加上滑鼠懸停（hover）時的轉場動畫效果。\n4. 增加區塊之間的留白（padding/margin），讓畫面看起來更舒適。"
+                        },
+                        {
+                            id: "s3",
+                            title: "步驟 3：修正響應式設計 (RWD)",
+                            goal: "確保網頁在手機、平板、電腦上都能完美顯示，不會破版。",
+                            action: "繼續在對話框中輸入下方提示詞。",
+                            result: "加入 CSS 媒體查詢或 Tailwind 類別。導覽列可能變成漢堡選單，卡片改為上下排列。",
+                            prompt: "請確保這個網頁具備完全的響應式設計（RWD）。\n1. 在手機螢幕（小於 768px）下，導覽列選單請收合，或者確保選單不會擠成一團。\n2. 關於我和作品展示的區塊，在手機上請改為單欄（1 column）垂直排列。\n3. 調整手機版上的字體大小，確保容易閱讀，不要讓畫面出現橫向捲軸。"
+                        }
+                    ]
+                },
+                {
+                    id: "phase2",
+                    icon: "📁",
+                    title: "階段二：專案結構",
+                    desc: "為了讓 GitHub Pages 能夠正確讀取並顯示你的網頁，必須遵守命名規則。",
+                    steps: [
+                        {
+                            id: "s4",
+                            title: "步驟 4：準備部署版本的程式碼",
+                            goal: "確認為最終版本，並確保主檔案叫做 index.html。",
+                            action: "使用提示詞請 Gemini 做最後檢查。將代碼全選複製，存成電腦桌面的 index.html。",
+                            result: "獲得了一個名為 index.html 的檔案，雙擊它可以在瀏覽器中開啟並正常運作。",
+                            prompt: "我要準備將這個網頁部署到 GitHub Pages 了。請幫我做最後的程式碼整理：\n1. 確保所有的 HTML、CSS 和 JavaScript 都完美整合在這單一個檔案中。\n2. 檢查所有圖片路徑，確保使用的是公開的佔位圖片網址（例如 picsum.photos），不要有本機絕對路徑（例如 C:/images/...）。\n3. 移除任何可能導致網頁在 iframe 或 GitHub Pages 上掛掉的語法。\n請給我這份最終版本的完整程式碼，我會將它存成 index.html。"
+                        }
+                    ]
+                },
+                {
+                    id: "phase3",
+                    icon: "🌐",
+                    title: "階段三：發布上線",
+                    desc: "將你的 index.html 放到網路上。",
+                    steps: [
+                        {
+                            id: "s5",
+                            title: "步驟 5：建立 GitHub Repository",
+                            goal: "在 GitHub 上開一個專屬的空間來存放網頁檔案。",
+                            action: "登入 GitHub > New repository > 命名 my-portfolio > 設為 Public > Create repository。",
+                            result: "成功建立一個空的 GitHub 儲存庫。",
+                            prompt: ""
+                        },
+                        {
+                            id: "s6",
+                            title: "步驟 6：上傳檔案",
+                            goal: "將你電腦裡的 index.html 傳到剛建好的儲存庫。",
+                            action: "點擊 uploading an existing file > 拖曳 index.html > 點擊 Commit changes。",
+                            result: "檔案成功上傳至 GitHub。",
+                            prompt: ""
+                        },
+                        {
+                            id: "s7",
+                            title: "步驟 7：啟用 GitHub Pages",
+                            goal: "開啟網頁代管功能，獲得專屬網址。",
+                            action: "Settings > Pages > Branch 改成 main > Save。等待 1~3 分鐘。",
+                            result: "獲得網址 https://你的帳號.github.io/my-portfolio/，個人作品集正式上線！",
+                            prompt: ""
+                        }
+                    ]
+                }
+            ],
+            debug: [
+                {
+                    title: "錯誤 1：GitHub Pages 顯示 404 Not Found",
+                    reason: "GitHub 找不到你的首頁檔案。",
+                    fix: "檢查檔案名稱是否完全符合小寫的 index.html。剛按下 Save 後需等待幾分鐘。"
+                },
+                {
+                    title: "錯誤 2：網頁長得很醜或功能失效",
+                    reason: "HTML、CSS、JS 分檔導致路徑寫錯，或程式碼本身有少括號。",
+                    fix: "開啟網頁按 F12 點擊 Console 查看紅字錯誤。若無法解決請使用下方提示詞求助。"
+                }
+            ]
+        };
+
+        let currentPhaseId = tutorialData.phases[0].id;
+        let stepCompletion = {
+            s1: false, s2: false, s3: false, s4: false, s5: false, s6: false, s7: false
+        };
+        let myChart = null;
+
+        function initApp() {
+            renderTabs();
+            renderContent(currentPhaseId);
+            renderDebug();
+            initChart();
+            updateChart();
+        }
+
+        function renderTabs() {
+            const container = document.getElementById('tabContainer');
+            let html = '';
+            tutorialData.phases.forEach(phase => {
+                const isActive = phase.id === currentPhaseId;
+                const activeClass = isActive ? 'border-amber-600 text-amber-700 bg-amber-50/50 font-bold' : 'border-transparent text-stone-500 hover:text-stone-700 hover:bg-stone-50';
+                html += `<button onclick="switchTab('${phase.id}')" class="px-6 py-4 border-b-2 whitespace-nowrap outline-none smooth-transition flex items-center gap-2 ${activeClass}"><span>${phase.icon}</span> ${phase.title}</button>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function switchTab(phaseId) {
+            currentPhaseId = phaseId;
+            renderTabs();
+            renderContent(phaseId);
+        }
+
+        function renderContent(phaseId) {
+            const container = document.getElementById('stepContentContainer');
+            const phase = tutorialData.phases.find(p => p.id === phaseId);
+            
+            let html = `<p class="text-stone-600 mb-6 text-lg">${phase.desc}</p><div class="space-y-8">`;
+            
+            phase.steps.forEach(step => {
+                const isDone = stepCompletion[step.id];
+                const checkClass = isDone ? 'bg-amber-600 border-amber-600' : 'border-stone-300 bg-white';
+                const checkMark = isDone ? '<span class="text-white text-xs">✓</span>' : '';
+                const opacityClass = isDone ? 'opacity-60' : 'opacity-100';
+
+                html += `
+                <div class="relative pl-10 smooth-transition ${opacityClass}">
+                    <div class="absolute left-0 top-1 w-6 h-6 rounded-md border-2 ${checkClass} flex items-center justify-center cursor-pointer smooth-transition hover:border-amber-500" onclick="toggleStep('${step.id}')">
+                        ${checkMark}
+                    </div>
+                    <h3 class="text-xl font-bold text-stone-800 mb-2 cursor-pointer hover:text-amber-700 smooth-transition" onclick="toggleStep('${step.id}')">${step.title}</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 text-sm">
+                        <div class="bg-stone-50 p-3 rounded-lg border border-stone-200">
+                            <strong class="text-stone-700 block mb-1">🎯 目的：</strong>
+                            <span class="text-stone-600">${step.goal}</span>
+                        </div>
+                        <div class="bg-stone-50 p-3 rounded-lg border border-stone-200">
+                            <strong class="text-stone-700 block mb-1">👉 操作：</strong>
+                            <span class="text-stone-600">${step.action}</span>
+                        </div>
+                    </div>
+                    <p class="text-sm text-amber-700 bg-amber-50 px-3 py-2 rounded-lg border border-amber-100 mb-4 font-medium">✨ 預期結果：${step.result}</p>
+                `;
+
+                if (step.prompt) {
+                    html += `
+                    <div class="bg-stone-800 rounded-xl overflow-hidden shadow-sm">
+                        <div class="flex justify-between items-center px-4 py-2 bg-stone-900 border-b border-stone-700">
+                            <span class="text-xs text-stone-400 font-mono tracking-wider">PROMPT TEMPLATE</span>
+                            <button onclick="copyText(this, \`${step.prompt.replace(/`/g, '\\`')}\`)" class="text-xs bg-stone-700 hover:bg-amber-600 text-white px-3 py-1.5 rounded smooth-transition flex items-center gap-1">
+                                <span>📋</span> 複製提示詞
+                            </button>
+                        </div>
+                        <div class="p-4 overflow-x-auto">
+                            <pre class="text-stone-300 text-sm font-mono whitespace-pre-wrap leading-relaxed">${step.prompt}</pre>
+                        </div>
+                    </div>`;
+                }
+                html += `</div>`;
+            });
+            
+            html += `</div>`;
+            container.innerHTML = html;
+        }
+
+        function renderDebug() {
+            const container = document.getElementById('debugContainer');
+            let html = '';
+            tutorialData.debug.forEach(d => {
+                html += `
+                <div class="bg-stone-700/50 border border-stone-600 rounded-xl p-4">
+                    <h4 class="font-bold text-amber-300 mb-2">${d.title}</h4>
+                    <p class="text-sm text-stone-300 mb-1"><strong class="text-stone-400">原因：</strong>${d.reason}</p>
+                    <p class="text-sm text-stone-300"><strong class="text-stone-400">解法：</strong>${d.fix}</p>
+                </div>`;
+            });
+
+            html += `
+            <div class="mt-6 border-t border-stone-600 pt-6">
+                <h4 class="font-bold text-stone-100 mb-3 flex items-center gap-2"><span>🆘</span> 終極自救提示詞</h4>
+                <div class="bg-stone-900 rounded-xl overflow-hidden">
+                    <div class="flex justify-between items-center px-4 py-2 bg-black border-b border-stone-700">
+                        <span class="text-xs text-stone-400 font-mono">DEBUG PROMPT</span>
+                        <button onclick="copyText(this, '我在測試網頁時遇到了問題。\\n[情況 A] 我的聯絡我按鈕點了沒有反應。\\n[情況 B] 在手機版的時候，首頁的圖片超級大，超出了螢幕範圍。\\n[情況 C] 瀏覽器的 Console 顯示這個錯誤訊息：(貼上錯誤訊息)\\n請告訴我這是什麼問題，並提供修正後的程式碼片段，以及我該替換掉原本檔案裡的哪一段。')" class="text-xs bg-stone-700 hover:bg-amber-600 text-white px-3 py-1.5 rounded smooth-transition flex items-center gap-1">
+                            <span>📋</span> 複製
+                        </button>
+                    </div>
+                    <div class="p-4">
+                        <pre class="text-stone-300 text-sm font-mono whitespace-pre-wrap leading-relaxed">我在測試網頁時遇到了問題。
+[情況 A] 我的聯絡我按鈕點了沒有反應。
+[情況 B] 在手機版的時候，首頁的圖片超級大，超出了螢幕範圍。
+[情況 C] 瀏覽器的 Console 顯示這個錯誤訊息：(貼上錯誤訊息)
+請告訴我這是什麼問題，並提供修正後的程式碼片段，以及我該替換掉原本檔案裡的哪一段。</pre>
+                    </div>
+                </div>
+            </div>`;
+            container.innerHTML = html;
+        }
+
+        function toggleStep(stepId) {
+            stepCompletion[stepId] = !stepCompletion[stepId];
+            renderContent(currentPhaseId);
+            updateChart();
+        }
+
+        function togglePrep(el) {
+            const check = el.querySelector('.prep-check');
+            const isDone = check.innerHTML.includes('✓');
+            if (isDone) {
+                check.innerHTML = '';
+                check.classList.remove('bg-amber-600', 'border-amber-600');
+                check.classList.add('border-stone-300');
+                el.classList.remove('opacity-60');
+            } else {
+                check.innerHTML = '<span class="text-white text-xs">✓</span>';
+                check.classList.remove('border-stone-300');
+                check.classList.add('bg-amber-600', 'border-amber-600');
+                el.classList.add('opacity-60');
+            }
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('progressChart').getContext('2d');
+            myChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['已完成', '未完成'],
+                    datasets: [{
+                        data: [0, 7],
+                        backgroundColor: ['#d97706', '#e7e5e4'],
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '75%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return ' ' + context.label + ': ' + context.parsed + ' 步';
+                                }
+                            }
+                        }
+                    },
+                    animation: { animateScale: true, animateRotate: true }
+                }
+            });
+        }
+
+        function updateChart() {
+            const total = Object.keys(stepCompletion).length;
+            const completed = Object.values(stepCompletion).filter(Boolean).length;
+            const uncompleted = total - completed;
+            const percent = Math.round((completed / total) * 100);
+
+            document.getElementById('progressText').innerText = percent + '%';
+
+            myChart.data.datasets[0].data = [completed, uncompleted];
+            myChart.update();
+        }
+
+        function copyText(btn, text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                showToast();
+            } catch (err) {
+                console.error('Copy failed');
+            }
+            document.body.removeChild(textArea);
+        }
+
+        function showToast() {
+            const toast = document.getElementById('toast');
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
